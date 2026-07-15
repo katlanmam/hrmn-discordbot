@@ -540,7 +540,6 @@ async def on_ready():
             print("UYARI: AUTO_JOIN_VOICE_CHANNEL_ID ile eşleşen bir kanal bulunamadı.")
 
     print("Bot hazır!")
- 
 # ---------------------------------------------------------
 # YARDIMCI FONKSİYON: Yetki kontrolü
 # ---------------------------------------------------------
