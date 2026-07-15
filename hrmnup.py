@@ -156,44 +156,21 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 # Basit bir hafızada uyarı sistemi: {user_id: [uyarı1, uyarı2, ...]}
 warnings: dict[int, list[str]] = {}
 
-
 # ---------------------------------------------------------
 # MÜZİK TAKİP VERİSİNİ DOSYADAN OKUMA / YAZMA
 # ---------------------------------------------------------
 def load_music_data() -> dict:
-    default_data = {
-        "music_channel_id": None,
-        "artists": {}
-    }
-
     if not os.path.exists(MUSIC_DATA_FILE):
-        return default_data
-
-    try:
-        with open(MUSIC_DATA_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-
-            if "music_channel_id" not in data:
-                data["music_channel_id"] = None
-
-            if "artists" not in data:
-                data["artists"] = {}
-
-            return data
-
-    except json.JSONDecodeError:
-        # Dosya boş veya bozuksa sıfırla
-        with open(MUSIC_DATA_FILE, "w", encoding="utf-8") as f:
-            json.dump(default_data, f, ensure_ascii=False, indent=2)
-
-        return default_data
-
-
+        return {"music_channel_id": 1526624752976793730, "artists": {}}
+    with open(MUSIC_DATA_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
+ 
+ 
 def save_music_data(data: dict) -> None:
     with open(MUSIC_DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
-
-
+ 
+ 
 music_data = load_music_data()
  
  # ---------------------------------------------------------
