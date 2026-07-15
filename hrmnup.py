@@ -504,25 +504,12 @@ welcome_data = load_welcome_data()
 # ---------------------------------------------------------
 @bot.event
 async def on_ready():
-    print("ON_READY ÇALIŞTI")
 
 
     activity = discord.Streaming(
         name="discord.gg/hrmn | /komutlar",
         url="https://www.twitch.tv/discord"  # Geçerli bir Twitch URL'si
     )
- 
- if AUTO_JOIN_VOICE_CHANNEL_ID:
-        channel = bot.get_channel(AUTO_JOIN_VOICE_CHANNEL_ID)
-        if channel is not None:
-            try:
-                await channel.connect()
-                print(f"Otomatik olarak '{channel.name}' ses kanalına girildi.")
-            except Exception as e:
-                print(f"Ses kanalına otomatik girerken hata oluştu: {e}")
-        else:
-            print("UYARI: AUTO_JOIN_VOICE_CHANNEL_ID ile eşleşen bir kanal bulunamadı.")
-
 
     await bot.change_presence(
         status=discord.Status.online,
@@ -540,10 +527,20 @@ async def on_ready():
 
     if not check_free_games.is_running():
         check_free_games.start()
-     
+
+    if AUTO_JOIN_VOICE_CHANNEL_ID:
+        channel = bot.get_channel(AUTO_JOIN_VOICE_CHANNEL_ID)
+        if channel is not None:
+            try:
+                await channel.connect()
+                print(f"Otomatik olarak '{channel.name}' ses kanalına girildi.")
+            except Exception as e:
+                print(f"Ses kanalına otomatik girerken hata oluştu: {e}")
+        else:
+            print("UYARI: AUTO_JOIN_VOICE_CHANNEL_ID ile eşleşen bir kanal bulunamadı.")
+
     print("Bot hazır!")
  
-
 # ---------------------------------------------------------
 # YARDIMCI FONKSİYON: Yetki kontrolü
 # ---------------------------------------------------------
