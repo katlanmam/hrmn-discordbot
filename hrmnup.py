@@ -23,13 +23,6 @@ import asyncio
 # ---------------------------------------------------------
 TOKEN = os.getenv("DISCORD_BOT_TOKEN", "")
 
-# Spotify Developer Dashboard'dan aldığın Client ID ve Client Secret
-SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID", "")
-SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET", "")
- 
-# Takip edilecek sanatçılar (istediğin zaman /sanatciekle ile yenilerini ekleyebilirsin)
-DEFAULT_ARTISTS = ["Uzi", "Motive", "Lvbel C5"]
-
 # /sarıl komutunda kullanılacak gif linki (istediğin gif linkini buraya yapıştır)
 HUG_GIF_URL = "https://media.tenor.com/MFde88T3ZiYAAAAM/peter-parker.gif"
 
@@ -145,7 +138,6 @@ warnings: dict[int, list[str]] = {}
  # Aktif sayı tahmin oyunları: {channel_id: {"number": int, "min": int, "max": int, "attempts": int}}
 guess_games: dict[int, dict] = {}
 
-MUSIC_DATA_FILE = "music_data.json"
 GAMES_DATA_FILE = "games_data.json"
 
 intents = discord.Intents.default()
@@ -155,23 +147,6 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 # Basit bir hafızada uyarı sistemi: {user_id: [uyarı1, uyarı2, ...]}
 warnings: dict[int, list[str]] = {}
-
-# ---------------------------------------------------------
-# MÜZİK TAKİP VERİSİNİ DOSYADAN OKUMA / YAZMA
-# ---------------------------------------------------------
-def load_music_data() -> dict:
-    if not os.path.exists(MUSIC_DATA_FILE):
-        return {"music_channel_id": 1526624752976793730, "artists": {}}
-    with open(MUSIC_DATA_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
- 
- 
-def save_music_data(data: dict) -> None:
-    with open(MUSIC_DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
- 
- 
-music_data = load_music_data()
  
  # ---------------------------------------------------------
 # ÜCRETSİZ OYUN TAKİP VERİSİNİ DOSYADAN OKUMA / YAZMA
@@ -262,61 +237,6 @@ def fetch_free_games():
         return []
  
  
- 
-# ---------------------------------------------------------
-# SPOTIFY API YARDIMCILARI
-# ---------------------------------------------------------
-_spotify_token = {"access_token": None, "expires_at": 0}
- 
- 
-def get_spotify_token() -> str:
-    """Client Credentials akışıyla Spotify erişim token'ı alır (gerekirse yeniler)."""
-    if _spotify_token["access_token"] and time.time() < _spotify_token["expires_at"] - 30:
-        return _spotify_token["access_token"]
- 
-    response = requests.post(
-        "https://accounts.spotify.com/api/token",
-        data={"grant_type": "client_credentials"},
-        auth=(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET),
-        timeout=10,
-    )
-    response.raise_for_status()
-    payload = response.json()
-    _spotify_token["access_token"] = payload["access_token"]
-    _spotify_token["expires_at"] = time.time() + payload["expires_in"]
-    return _spotify_token["access_token"]
- 
- 
-def spotify_search_artist(name: str) -> dict | None:
-    """İsme göre Spotify'da sanatçı arar, en iyi eşleşmeyi döndürür."""
-    token = get_spotify_token()
-    response = requests.get(
-        "https://api.spotify.com/v1/search",
-        headers={"Authorization": f"Bearer {token}"},
-        params={"q": name, "type": "artist", "limit": 1},
-        timeout=10,
-    )
-    response.raise_for_status()
-    items = response.json()["artists"]["items"]
-    return items[0] if items else None
- 
- 
-def spotify_latest_release(artist_id: str) -> dict | None:
-    """Bir sanatçının en son çıkardığı albüm/single'ı döndürür."""
-    token = get_spotify_token()
-    response = requests.get(
-        f"https://api.spotify.com/v1/artists/{artist_id}/albums",
-        headers={"Authorization": f"Bearer {token}"},
-        params={"include_groups": "album,single", "market": "TR", "limit": 10},
-        timeout=10,
-    )
-    response.raise_for_status()
-    items = response.json()["items"]
-    if not items:
-        return None
-    # En yeni çıkışı bulmak için tarihe göre sırala
-    items.sort(key=lambda x: x["release_date"], reverse=True)
-    return items[0]
 
 # ==============================
 # COIN
@@ -759,100 +679,6 @@ async def warnings_cmd(interaction: discord.Interaction, member: discord.Member)
     embed.set_footer(text=f"Toplam {len(warnings[uid])} uyarı")
 
     await interaction.response.send_message(embed=embed)
-
-# ---------------------------------------------------------
-# /setmuzikkanali - bildirimlerin gideceği kanalı ayarlar
-# ---------------------------------------------------------
-
-@bot.tree.command(name="setmuzikkanali", description="Yeni şarkı bildirimlerinin gönderileceği kanalı ayarlar")
-@app_commands.describe(channel="Bildirimlerin gönderileceği kanal")
-async def set_music_channel(interaction: discord.Interaction, channel: discord.TextChannel):
-    if not has_permission(interaction, "manage_guild"):
-        await interaction.response.send_message("Bu komutu kullanma yetkin yok.", ephemeral=True)
-        return
- 
-    music_data["music_channel_id"] = channel.id
-    save_music_data(music_data)
-    await interaction.response.send_message(f"✅ Müzik bildirimleri artık {channel.mention} kanalına gönderilecek.")
-# ---------------------------------------------------------
-# /sanatciekle - takip listesine yeni sanatçı ekler
-# ---------------------------------------------------------
-@bot.tree.command(name="sanatciekle", description="Takip edilecek listeye yeni bir sanatçı ekler")
-@app_commands.describe(isim="Spotify'daki sanatçı ismi (örn. Uzi, Motive, Lvbel C5)")
-async def add_artist(interaction: discord.Interaction, isim: str):
-    if not has_permission(interaction, "manage_guild"):
-        await interaction.response.send_message("Bu komutu kullanma yetkin yok.", ephemeral=True)
-        return
- 
-    await interaction.response.defer()
- 
-    try:
-        artist = spotify_search_artist(isim)
-    except requests.exceptions.RequestException as e:
-        await interaction.followup.send(f"Spotify'a bağlanırken hata oluştu: {e}")
-        return
- 
-    if not artist:
-        await interaction.followup.send(f"'{isim}' isminde bir sanatçı bulunamadı.")
-        return
- 
-    artist_id = artist["id"]
-    artist_name = artist["name"]
- 
-    # Baseline: mevcut en son çıkışı kaydet, böylece eklendiği anda eski şarkı için bildirim atmaz
-    latest = spotify_latest_release(artist_id)
-    last_release_id = latest["id"] if latest else None
- 
-    music_data["artists"][artist_id] = {
-        "name": artist_name,
-        "last_release_id": last_release_id,
-    }
-    save_music_data(music_data)
- 
-    await interaction.followup.send(
-        f"🎵 **{artist_name}** takip listesine eklendi! Yeni bir şarkı çıkardığında haber vereceğim."
-    )
- 
- 
-# ---------------------------------------------------------
-# /sanatcilistesi - takip edilen sanatçıları gösterir
-# ---------------------------------------------------------
-@bot.tree.command(name="sanatcilistesi", description="Takip edilen sanatçıları listeler")
-async def list_artists(interaction: discord.Interaction):
-    artists = music_data.get("artists", {})
-    if not artists:
-        await interaction.response.send_message("Henüz takip edilen sanatçı yok. `/sanatciekle` ile ekleyebilirsin.")
-        return
- 
-    names = "\n".join(f"- {info['name']}" for info in artists.values())
-    await interaction.response.send_message(f"🎤 Takip edilen sanatçılar:\n{names}")
- 
- 
-# ---------------------------------------------------------
-# /sanatcisil - takip listesinden sanatçı çıkarır
-# ---------------------------------------------------------
-@bot.tree.command(name="sanatcisil", description="Takip listesinden bir sanatçıyı çıkarır")
-@app_commands.describe(isim="Silinecek sanatçının ismi")
-async def remove_artist(interaction: discord.Interaction, isim: str):
-    if not has_permission(interaction, "manage_guild"):
-        await interaction.response.send_message("Bu komutu kullanma yetkin yok.", ephemeral=True)
-        return
- 
-    artists = music_data.get("artists", {})
-    match_id = None
-    for artist_id, info in artists.items():
-        if info["name"].lower() == isim.lower():
-            match_id = artist_id
-            break
- 
-    if not match_id:
-        await interaction.response.send_message(f"'{isim}' takip listesinde bulunamadı.", ephemeral=True)
-        return
- 
-    removed_name = artists[match_id]["name"]
-    del artists[match_id]
-    save_music_data(music_data)
-    await interaction.response.send_message(f"🗑️ **{removed_name}** takip listesinden çıkarıldı.")
 
     # ---------------------------------------------------------
 # /zar - iki sayı arasında rastgele bir sayı seçer
