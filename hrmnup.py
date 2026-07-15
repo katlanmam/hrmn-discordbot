@@ -761,12 +761,9 @@ async def warnings_cmd(interaction: discord.Interaction, member: discord.Member)
 
     await interaction.response.send_message(embed=embed)
 
-
-
 # ---------------------------------------------------------
 # /setmuzikkanali - bildirimlerin gideceği kanalı ayarlar
 # ---------------------------------------------------------
-
 @bot.tree.command(name="setmuzikkanali", description="Yeni şarkı bildirimlerinin gönderileceği kanalı ayarlar")
 @app_commands.describe(channel="Bildirimlerin gönderileceği kanal")
 async def set_music_channel(interaction: discord.Interaction, channel: discord.TextChannel):
@@ -777,6 +774,7 @@ async def set_music_channel(interaction: discord.Interaction, channel: discord.T
     music_data["music_channel_id"] = channel.id
     save_music_data(music_data)
     await interaction.response.send_message(f"✅ Müzik bildirimleri artık {channel.mention} kanalına gönderilecek.")
+ 
 # ---------------------------------------------------------
 # /sanatciekle - takip listesine yeni sanatçı ekler
 # ---------------------------------------------------------
@@ -816,8 +814,7 @@ async def add_artist(interaction: discord.Interaction, isim: str):
         f"🎵 **{artist_name}** takip listesine eklendi! Yeni bir şarkı çıkardığında haber vereceğim."
     )
  
- 
-# ---------------------------------------------------------
+ # ---------------------------------------------------------
 # /sanatcilistesi - takip edilen sanatçıları gösterir
 # ---------------------------------------------------------
 @bot.tree.command(name="sanatcilistesi", description="Takip edilen sanatçıları listeler")
