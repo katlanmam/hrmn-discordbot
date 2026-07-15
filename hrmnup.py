@@ -504,6 +504,7 @@ welcome_data = load_welcome_data()
 # ---------------------------------------------------------
 @bot.event
 async def on_ready():
+    print("ON_READY ÇALIŞTI")
 
 
     activity = discord.Streaming(
@@ -2076,6 +2077,7 @@ async def on_app_command_error(interaction, error):
 if __name__ == "__main__":
     if TOKEN == "":
         print("UYARI: Lütfen bot.py içine ya da DISCORD_BOT_TOKEN ortam değişkenine token'ını gir!")
-    bot.run(TOKEN)
+     print("TOKEN VAR MI:", bool(TOKEN))
+bot.run(TOKEN)
 
 #
