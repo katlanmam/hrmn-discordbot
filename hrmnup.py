@@ -2072,9 +2072,7 @@ async def on_app_command_error(interaction, error):
 # BOTU ÇALIŞTIR
 # ---------------------------------------------------------
 if __name__ == "__main__":
-    if TOKEN == "":
+    if TOKEN == "MTQ1MzQwNzg5ODkyNjQ1Mjc3Ng.GP0ZpA.Mivhafgsth3MF6z2WDH7Y-aWwBu3msSRZRtWxc":
         print("UYARI: Lütfen bot.py içine ya da DISCORD_BOT_TOKEN ortam değişkenine token'ını gir!")
-     print("TOKEN VAR MI:", bool(TOKEN))
-bot.run(TOKEN)
+    bot.run(TOKEN)
 
-#
